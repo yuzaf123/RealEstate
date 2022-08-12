@@ -1,84 +1,85 @@
-const router = require('express').Router();
-const { House } = require ('../../Models/House')
-const Formidable = require('formidable');
-const cloudinary = require('cloudinary').v2;
-require("dotenv").config();
-const mongoose = require('mongoose');
+const router = require("express").Router();
+const mongoose = require("mongoose");
+const Formidable = require("formidable");
+const cloudinary = require("cloudinary").v2;
+const House = require("../../Models/House");
+require('dotenv').config();
 
-//===================================cloudinary and Mongodb config=================================
-
-const mongoURI= process.env.MONGO_URI;
+//Initialize MongoDB connection and Cloudinary
+const MongoURI = process.env.MONGO_URI;
+mongoose.connect(
+  MongoURI,
+  { useNewUrlParser: true, useUnifiedTopology: true },
+  (error) => {
+    if (error) {
+      return console.log(error);
+    }
+    return console.log("Connection to MongoDB was Successful");
+  }
+);
 
 cloudinary.config({
-    cloud_name:process.env.CLOUD_NAME,
-    api_key:process.env.API_KEY,
-    api_secret:process.env.API_SECRET,
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
 });
 
-//=====================================Mongodb connection==============================
+//ROUTE FOR USER TO COME SELL OR RENT THEIR HOUSES
 
+router.post("/house-upload", async (request, response) => {
+  const form = new Formidable.IncomingForm();
+  form.parse(request, (error, fields, files) => {
+    const {
+      price,
+      province,
+      city,
+      numOfBedRooms,
+      numOfBathRooms,
+      isSaleOrRent,
+    } = fields;
 
-mongoose.connect(mongoURI, {useNewUrlParser: true, useUnifiedTopology: true}, (error)=>{
-    if(error){
-        return console.log(error);
-    }
-    return console.log("Connection to MONGODB was successfull");
-})
+    const { houseImage, } = files;
 
+    cloudinary.uploader.upload(
+      houseImage.path,
+      { folder: "/houseAgency/houses" },
+      async (error, results) => {
+        console.log(results);
+        const image_url = results.url;
 
-
-router.post("/api/house-listing", async (request , response)=> {
-    const form = new Formidable.IncomingForm();
-    form.parse(request, (errors, fields, files)=> {
-        const {
-            price,
-            province,
-            city,
-            numOfBedRooms,
-            numOfBathRooms,
-            IsSaleOrRent,
-        } = fields;
-
-        const { houseImage } = files
-
-        cloudinary.uploader.upload(
-            houseImage.path,
-            { folder: "/houseAgency/houses" },
-            async (error, results) => {
-              const image_url = results.url;
         const newHouse = new House({
-            house_location:{
-                province:province,
-                city:city,
-            },
-            house_details:{
-                price:price,
-                IsSaleOrRent:IsSaleOrRent,
-                numOfBedRooms:numOfBedRooms,
-                numOfBathRooms:numOfBathRooms,
-                house_image: image_url,
-            },
+          house_location: {
+            province: province,
+            city: city,
+          },
+          house_properties: {
+            price: price,
+            numOfBedRooms: numOfBedRooms,
+            numOfBathRooms: numOfBathRooms,
+            isSaleOrRent: isSaleOrRent,
+            houseImage: image_url,
+          },
         });
-
-        const savedHouse = await newHouse.save();
+        const savedHouse= await newHouse.save();
         return response.status(200).json(savedHouse);
-       });
-
-    });
+      }
+    );
+  });
 });
 
-module.exports= router;
-
-
-
-
-
-
-
-// console.log("Price", price);
+module.exports = router;
+// console.log("Name: ", name);
+// console.log("Surname: ", surname);
+// console.log("IdNUmebr: ", idNumber);
+// console.log("PhoneNumber", phoneNumber);
+// console.log("Emaiil: ", email);
 // console.log("Province", province);
-// console.log("city", city);
-// console.log("BedRoomNumber", numOfBedRooms);
-// console.log("Bathroom", numOfBathRooms);
-// console.log("SALE OR RENT: ", IsSaleOrRent);
-// console.log("houseImage: ", houseImage);
+// console.log("Street", street);
+// console.log("SALE OR RENT: ", sale_or_rent);
+// console.log("LAND SIZE", land_size);
+// console.log("BedRoomNUmber", bedroomNumber);
+// console.log("Garages", garages);
+// console.log("Pool", pool);
+// console.log("Bathroom", bathroomNumber);
+// console.log("Pet Friendly", petFriendly);
+// console.log("House IMage", houseImage.path);
